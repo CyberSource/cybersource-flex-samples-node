@@ -24,7 +24,7 @@
         <div class="container card">
             <div class="card-body">
                 <h1>Checkout</h1>
-                <form action="receipt.jsp" id="my-sample-form" method="post">
+                <form action="/receipt" id="my-sample-form" method="post">
                     <div class="form-group">
                         <label for="cardholderName">Name</label>
                         <input id="cardholderName" class="form-control" name="cardholderName" placeholder="Name on the card">
@@ -55,41 +55,39 @@
                         <div class="form-group col-md-6">
                             <label for="expYear">Expiry year</label>
                             <select id="expYear" class="form-control">
-                                <option>2019</option>
                                 <option>2020</option>
                                 <option>2021</option>
+                                <option>2022</option>
                             </select>
                         </div>
                     </div>
 
                     <button type="button" id="pay-button" class="btn btn-primary">Pay</button>
-                    <input type="hidden" id="flex-response" name="flex-response">
+                    <input type="hidden" id="flexresponse" name="flexresponse">
                 </form>
             </div>
         </div>
 
+    
         <script src="https://testflex.cybersource.com/cybersource/assets/microform/0.4.0/flex-microform.min.js"></script>
         <script>
             
-            // TBD Replace this hard-coding with a key request server-side call
-
-            var jwk = {
-    "kty": "RSA",
-    "use": "enc",
-    "kid": "08xJZalPFmvRfaFwgW1JdopeMwqMIsCA",
-    "n": "mf0qMs87QF_AbInEIlaQO_u4fP4UWksxzyAArVksa4-iBsz98YfQueNzWHlNB5Xn8Ur5HpNdk5kNZa2UV7uEonoALJC7Wn8Y8wJHgDGy481Meb8Xr7P56eI15L6xt4fbnEp6Ck2KhiaG489xuPzLyYKZoU9Qfwfie9-eYyvSxBUIPrQBN19TQBmMXCV6Znc7xKZwy4Sag8jgA3BgD-fgNLzr80kbCxlfAACsXhbbixs5_XfPhW6kCIX8kDrB3j2tWilS7lYjMdqSnM9RGmD5EkCt4e-yGynZDOjFO6qOvkTK02cauT_lYi-_K6iqUf5TDx4eS2PgXyRZpUHuPsFoKQ",
-    "e": "AQAB"
-}
+            // JWK is set up on the server side route for /
 
             var form = document.querySelector('#my-sample-form');
             var payButton = document.querySelector('#pay-button');
-            var flexResponse = document.querySelector('#flex-response');
+            var flexResponse = document.querySelector('#flexresponse');
             var expMonth = document.querySelector('#expMonth');
             var expYear = document.querySelector('#expYear');
+            
+            var jwk = <%-keyInfo%> ;
+            console.log(JSON.stringify(jwk));
+            
 
             // SETUP MICROFORM
             FLEX.microform(
                     {
+                        
                         keyId: jwk.kid,
                         keystore: jwk,
                         container: '#cardNumber-container',
