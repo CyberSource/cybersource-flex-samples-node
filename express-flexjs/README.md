@@ -22,7 +22,7 @@ A simple client-side tokenization example integration using Flex JavaScript SDK 
 
 3. Pull down the package dependencies
   ```bash
-  cd express-flex.js
+  cd express-flexjs
   npm install
   ```
 
