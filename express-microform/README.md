@@ -31,7 +31,7 @@ Flex Microform is a CyberSource-hosted HTML/JavaScript component that replaces t
 DEBUG=express-microform:* npm start
 ```
 
-5. Navigate to http://localhost:3000 to try the sample application
+5. Navigate to http://localhost:3000/checkout to try the sample application
 
 ## Tips
 
