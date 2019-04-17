@@ -9,7 +9,7 @@ This repository provides simple examples demonstrating usage of the CyberSource 
 3. Update app.js with your [CyberSource sandbox credentials](https://ebc2test.cybersource.com). 
 4. Run ```npm install``` in the sample you want to try (express-microform or express-flexjs).
 5. Run ```DEBUG=express-microform:* npm start``` or ```DEBUG=express-flexjs:* npm start```.
-6. Browse to http://localhost:3000/checkout in your browser
+6. Browse to http://localhost:3000/checkout/checkout in your browser
 
 ## Requirements
 * Node
