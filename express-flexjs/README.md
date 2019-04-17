@@ -31,7 +31,7 @@ A simple client-side tokenization example integration using Flex JavaScript SDK 
 DEBUG=express-flexjs:* npm start
 ```
 
-5. Navigate to http://localhost:3000 to try the sample application
+5. Navigate to http://localhost:3000/checkout to try the sample application
 
 ## Tips
 
