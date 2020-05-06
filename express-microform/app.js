@@ -66,7 +66,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
-// route pages
+// THIS IS THE SERVER-SIDE REQUEST TO GENERATE THE DYNAMIC KEY 
+// REQUIRED FOR THE MICROFORM TO TOKENIZE
 app.get('/checkout', function (req, res) {
 
         try {
@@ -76,24 +77,44 @@ app.get('/checkout', function (req, res) {
                 request.encryptionType = 'RsaOaep256';
                 request.targetOrigin = 'http://localhost:3000';
 
-                var options = {
-                        'generatePublicKeyRequest': request
-                };
+                var opts = [];
+                opts['format'] = 'JWT';
 
                 console.log('\n*************** Generate Key ********************* ');
-
-                instance.generatePublicKey(options, function (error, data, response) {
-                        if (error) {
-                                console.log('Error : ' + error);
-                                console.log('Error status code : ' + error.statusCode);
-                        }
-                        else if (data) {
-                                console.log('Data : ' + JSON.stringify(data));
-                                res.render('index', { keyInfo:  JSON.stringify(data.jwk)});
-                        }
-                        console.log('Response : ' + JSON.stringify(response));
-                        console.log('Response Code Of GenerateKey : ' + response['status']);
+                
+                instance.generatePublicKey(request, opts, function (error, data, response) {
+                    if (error) {
+                        console.log('Error : ' + error);
+                        console.log('Error status code : ' + error.statusCode);
+                    }
+                    else if (data) {
+                        console.log('Data : ' + JSON.stringify(data));
+                        console.log('CaptureContext: '+data.keyId);
+                        res.render('index', { keyInfo: JSON.stringify(data.keyId)});
+                    }
+                    console.log('Response : ' + JSON.stringify(response));
+                    console.log('Response Code Of GenerateKey : ' + response['status']);
+                    callback(error, data);
                 });
+                
+            } catch (error) {
+                console.log(error);
+            }
+          
+});
+
+// THIS ROUTE SIMPLY POWERS THE TOKEN PAGE TO DISPLAY THE TOKEN
+// NOTE THIS IS AN INTERIM STEP FOR THE SAMPLE AND WOULD OBVIOUSLY
+// NOT BE PART OR A REAL CHECKOUT FLOW
+app.post('/token', function (req, res) {
+
+        try {
+               
+                console.log('Response : ' + req.body.flexresponse);
+                var tokenResponse = JSON.parse(req.body.flexresponse)
+
+                res.render('token', { flexresponse:  req.body.flexresponse} );
+                        
         } catch (error) {
                 res.send('Error : ' + error + ' Error status code : ' + error.statusCode);
         }
@@ -101,21 +122,75 @@ app.get('/checkout', function (req, res) {
 
 });
 
-// route pages
+// THIS REPRESENTS THE SERVER-SIDE REQUEST TO MAKE A PAYMENT WITH THE TRANSIENT
+// TOKEN
 app.post('/receipt', function (req, res) {
 
-        console.log('GOT HERE');
-        try {
-               
-                console.log('Response : ' + req.body.flexresponse);
-                var tokenResponse = JSON.parse(req.body.flexresponse)
+        var tokenResponse = JSON.parse(req.body.flexresponse)
+        console.log('Transient token for payment is: ' + JSON.stringify(tokenResponse));
 
-                res.render('receipt', { flexresponse:  req.body.flexresponse, flextoken: tokenResponse.token} );
-                        
-        } catch (error) {
-                res.send('Error : ' + error + ' Error status code : ' + error.statusCode);
-        }
-  
+         try {
+                
+                var instance = new cybersourceRestApi.PaymentsApi(configObj);
+
+                var clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
+                clientReferenceInformation.code = 'test_flex_payment';
+
+                var processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
+                processingInformation.commerceIndicator = 'internet';
+
+                var amountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
+                amountDetails.totalAmount = '102.21';
+                amountDetails.currency = 'USD';
+
+                var billTo = new cybersourceRestApi.Ptsv2paymentsOrderInformationBillTo();
+                billTo.country = 'US';
+                billTo.firstName = 'John';
+                billTo.lastName = 'Deo';
+                billTo.phoneNumber = '4158880000';
+                billTo.address1 = 'test';
+                billTo.postalCode = '94105';
+                billTo.locality = 'San Francisco';
+                billTo.administrativeArea = 'MI';
+                billTo.email = 'test@cybs.com';
+                billTo.address2 = 'Address 2';
+                billTo.district = 'MI';
+                billTo.buildingNumber = '123';
+
+                var orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
+                orderInformation.amountDetails = amountDetails;
+                orderInformation.billTo = billTo;
+
+                // EVERYTHING ABOVE IS JUST NORMAL PAYMENT INFORMATION
+                // THIS IS WHERE YOU PLUG IN THE MICROFORM TRANSIENT TOKEN
+                var tokenInformation = new cybersourceRestApi.Ptsv2paymentsTokenInformation();
+                tokenInformation.transientTokenJwt = tokenResponse;
+
+                var request = new cybersourceRestApi.CreatePaymentRequest();
+                request.clientReferenceInformation = clientReferenceInformation;
+                request.processingInformation = processingInformation;
+                request.orderInformation = orderInformation;
+                request.tokenInformation = tokenInformation;
+
+                console.log('\n*************** Process Payment ********************* ');
+
+                instance.createPayment(request, function (error, data, response) {
+                    if (error) {
+                        console.log('\nError in process a payment : ' + JSON.stringify(error));
+                    }
+                    else if (data) {
+                        console.log('\nData of process a payment : ' + JSON.stringify(data));
+                        res.render('receipt', { paymentResponse:  JSON.stringify(data)} );
+                
+                    }
+                    console.log('\nResponse of process a payment : ' + JSON.stringify(response));
+                    console.log('\nResponse Code of process a payment : ' + JSON.stringify(response['status']));
+                    callback(error, data);
+                });
+                
+            } catch (error) {
+                console.log(error);
+            }
 
 });
 
