@@ -42,12 +42,24 @@ This sample demonstrates how your checkout form can remain exactly as it is toda
 
 This sample demonstrates how you can replace the sensitive data fields (credit card number) on your checkout form with a field (Flex Microform) hosted entirely on CyberSource servers. This field will accept and tokenize the customer's credit card information directly from their browser on a resource hosted by CyberSource, replacing that data with a secure PCI-compliant token. This can then be sent to your server along with the other non-PCI order data.  This can help achieve PCI-DSS SAQ A level compliance for your application as even your client-side code does not contain a mechanism to handle the credit card information.
 
+## Generating the Dynamic Key
+The sample uses the CyberSource Node SDK to generate the dynamic security key required to initialize the microform.  This would be a server-side call in your checkout flow, generally done before you display your checkout page. You can learn more about this API call here : https://developer.cybersource.com/api-reference-assets/index.html#flex_key-generation 
 
-## Using the Flex Payment Token
 
-You can use the token generated to make a payment with the CyberSource REST API (https://developer.cybersource.com/api/reference/api-reference.html).  
+## Displaying the Microform Secure Fields
+The secure hosted microform fields are initialized by calling the CyberSource Flex javascript library, the latest version is 
 
-Place the token in the CustomerId field:
+````javascript
+https://flex.cybersource.com/cybersource/assets/microform/0.11/flex-microform.min.js
+```` 
+You can then include these fields in your checkout page, styling them with your own CSS and even hooking into field events.
+See index.ejs in the sample for examples of this.
+
+## Using the Flex Transient Token
+
+You can use the token generated to make a payment with the CyberSource REST API (https://developer.cybersource.com/api-reference-assets/index.html#payments_payments_process-a-payment).  
+
+Place the transient token in the transientTokenJwt field:
 
 ```json
 {
@@ -71,6 +83,9 @@ Place the token in the CustomerId field:
       "firstName": "John",
       "lastName": "Doe"
     }
+  },
+  "tokenInformation": {
+    "transientTokenJwt": ""
   }
 }
 
