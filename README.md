@@ -69,11 +69,6 @@ Place the transient token in the transientTokenJwt field:
   "processingInformation": {
     "commerceIndicator": "internet"
   },
-  "paymentInformation": {
-    "customer": {
-      "customerId": "7500BB199B4270EFE05340588D0AFCAD"
-    }
-  },
   "orderInformation": {
     "amountDetails": {
       "totalAmount": "22",
