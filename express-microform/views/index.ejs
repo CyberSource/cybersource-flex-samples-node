@@ -113,9 +113,7 @@
               var options = {    
                 expirationMonth: document.querySelector('#expMonth').value,  
                 expirationYear: document.querySelector('#expYear').value 
-              };
-              console.log(document.querySelector('#expMonth').value);
-              console.log(expMonth.value);
+              };              
               
               microform.createToken(options, function (err, token) {
                 if (err) {
