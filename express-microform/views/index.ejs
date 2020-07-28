@@ -109,11 +109,12 @@
 
 
             payButton.addEventListener('click', function() {  
+              
               var options = {    
-                cardExpirationMonth: expMonth.value,  
-                cardExpirationYear: expYear.value 
-              };
-
+                expirationMonth: document.querySelector('#expMonth').value,  
+                expirationYear: document.querySelector('#expYear').value 
+              };              
+              
               microform.createToken(options, function (err, token) {
                 if (err) {
                   // handle error
