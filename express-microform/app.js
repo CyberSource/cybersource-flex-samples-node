@@ -1,57 +1,16 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
 
-var cybersourceRestApi = require('cybersource-rest-client');
+const cybersourceRestApi = require('cybersource-rest-client');
+const configuration = require('./Data/Configuration');
 
-// common parameters
-const AuthenticationType = 'http_signature';
-const RunEnvironment = 'cybersource.environment.SANDBOX';
-const MerchantId = 'testrest';
-
-// http_signature parameters
-const MerchantKeyId = '08c94330-f618-42a3-b09d-e1e43be5efda';
-const MerchantSecretKey = 'yBJxy6LjM2TmcPGu+GaJrHtkke25fPpUX+UY6/L/1tE=';
-
-// jwt parameters
-const KeysDirectory = 'Resource';
-const KeyFileName = 'testrest';
-const KeyAlias = 'testrest';
-const KeyPass = 'testrest';
-
-// logging parameters
-const EnableLog = true;
-const LogFileName = 'cybs';
-const LogDirectory = '../log';
-const LogfileMaxSize = '5242880'; //10 MB In Bytes
-
-
-var configObj = {
-	'authenticationType': AuthenticationType,	
-	'runEnvironment': RunEnvironment,
-
-	'merchantID': MerchantId,
-	'merchantKeyId': MerchantKeyId,
-	'merchantsecretKey': MerchantSecretKey,
-    
-	'keyAlias': KeyAlias,
-	'keyPass': KeyPass,
-	'keyFileName': KeyFileName,
-	'keysDirectory': KeysDirectory,
-    
-	'enableLog': EnableLog,
-	'logFilename': LogFileName,
-	'logDirectory': LogDirectory,
-	'logFileMaxSize': LogfileMaxSize
-};
-
-
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -71,35 +30,36 @@ app.use('/users', usersRouter);
 app.get('/checkout', function (req, res) {
 
         try {
-                var instance = new cybersourceRestApi.KeyGenerationApi(configObj);
-
-                var request = new cybersourceRestApi.GeneratePublicKeyRequest();
-                request.encryptionType = 'RsaOaep256';
-                request.targetOrigin = 'http://localhost:3000';
-
-                var opts = [];
-                opts['format'] = 'JWT';
-
-                console.log('\n*************** Generate Key ********************* ');
-                
-                instance.generatePublicKey(request, opts, function (error, data, response) {
-                    if (error) {
-                        console.log('Error : ' + error);
-                        console.log('Error status code : ' + error.statusCode);
-                    }
-                    else if (data) {
-                        console.log('Data : ' + JSON.stringify(data));
-                        console.log('CaptureContext: '+data.keyId);
-                        res.render('index', { keyInfo: JSON.stringify(data.keyId)});
-                    }
-                    console.log('Response : ' + JSON.stringify(response));
-                    console.log('Response Code Of GenerateKey : ' + response['status']);
-                    callback(error, data);
-                });
-                
-            } catch (error) {
-                console.log(error);
-            }
+            const configObject = new configuration();
+            const apiClient = new cybersourceRestApi.ApiClient();
+            const requestObj = new cybersourceRestApi.GenerateCaptureContextRequest();
+    
+            requestObj.clientVersion = 'v2';
+            requestObj.targetOrigins = ["http://localhost:3000"];
+            requestObj.allowedCardNetworks = ["VISA", "MAESTRO", "MASTERCARD", "AMEX", "DISCOVER", "DINERSCLUB", "JCB", "CUP", "CARTESBANCAIRES"];
+            requestObj.allowedPaymentTypes = ["CARD","CHECK"];
+    
+            const instance = new cybersourceRestApi.MicroformIntegrationApi(configObject, apiClient);
+    
+            instance.generateCaptureContext(requestObj, function (error, data, response) {
+                if (error) {
+                    console.log('\nError : ' + JSON.stringify(error));
+                }
+                else if (data) {
+                    console.log('\nData : ' + JSON.stringify(data));
+                    const decodeData =  JSON.parse(Buffer.from(data.split('.')[1], 'base64').toString());
+                    const url = decodeData.ctx[0].data.clientLibrary;
+                    const clientLibraryIntegrity = decodeData.ctx[0].data.clientLibraryIntegrity
+                    res.render('index', { keyInfo: JSON.stringify(data), url: JSON.stringify(url), clientLibraryIntegrity: JSON.stringify(clientLibraryIntegrity)});
+                }
+    
+                console.log('\nResponse : ' + JSON.stringify(response));
+                console.log('\nResponse Code of Process a Payment : ' + JSON.stringify(response['status']));
+            });
+        }
+        catch (error) {
+            console.log('\nException on calling the API : ' + error);
+        }
           
 });
 
@@ -111,8 +71,6 @@ app.post('/token', function (req, res) {
         try {
                
                 console.log('Response : ' + req.body.flexresponse);
-                var tokenResponse = JSON.parse(req.body.flexresponse)
-
                 res.render('token', { flexresponse:  req.body.flexresponse} );
                         
         } catch (error) {
@@ -126,24 +84,24 @@ app.post('/token', function (req, res) {
 // TOKEN
 app.post('/receipt', function (req, res) {
 
-        var tokenResponse = JSON.parse(req.body.flexresponse)
+        const tokenResponse = JSON.parse(req.body.flexresponse)
         console.log('Transient token for payment is: ' + JSON.stringify(tokenResponse));
 
          try {
-                
-                var instance = new cybersourceRestApi.PaymentsApi(configObj);
+                const configObject = new configuration();
+                const instance = new cybersourceRestApi.PaymentsApi(configObject);
 
-                var clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
+                const clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
                 clientReferenceInformation.code = 'test_flex_payment';
 
-                var processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
+                const processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
                 processingInformation.commerceIndicator = 'internet';
 
-                var amountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
+                const amountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
                 amountDetails.totalAmount = '102.21';
                 amountDetails.currency = 'USD';
 
-                var billTo = new cybersourceRestApi.Ptsv2paymentsOrderInformationBillTo();
+                const billTo = new cybersourceRestApi.Ptsv2paymentsOrderInformationBillTo();
                 billTo.country = 'US';
                 billTo.firstName = 'John';
                 billTo.lastName = 'Deo';
@@ -157,16 +115,16 @@ app.post('/receipt', function (req, res) {
                 billTo.district = 'MI';
                 billTo.buildingNumber = '123';
 
-                var orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
+                const orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
                 orderInformation.amountDetails = amountDetails;
                 orderInformation.billTo = billTo;
 
                 // EVERYTHING ABOVE IS JUST NORMAL PAYMENT INFORMATION
                 // THIS IS WHERE YOU PLUG IN THE MICROFORM TRANSIENT TOKEN
-                var tokenInformation = new cybersourceRestApi.Ptsv2paymentsTokenInformation();
+                const tokenInformation = new cybersourceRestApi.Ptsv2paymentsTokenInformation();
                 tokenInformation.transientTokenJwt = tokenResponse;
 
-                var request = new cybersourceRestApi.CreatePaymentRequest();
+                const request = new cybersourceRestApi.CreatePaymentRequest();
                 request.clientReferenceInformation = clientReferenceInformation;
                 request.processingInformation = processingInformation;
                 request.orderInformation = orderInformation;
@@ -184,8 +142,6 @@ app.post('/receipt', function (req, res) {
                 
                     }
                     console.log('\nResponse of process a payment : ' + JSON.stringify(response));
-                    console.log('\nResponse Code of process a payment : ' + JSON.stringify(response['status']));
-                    callback(error, data);
                 });
                 
             } catch (error) {
