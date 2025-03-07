@@ -86,10 +86,9 @@
           
             // the capture context that was requested server-side for this transaction
             var captureContext = <%-keyInfo%> ;
-            var url = <%-url%> ;
+            var clientLibrary = <%-url%> ;
             var clientLibraryIntegrity = <%-clientLibraryIntegrity%>;
 
-            const head = document.getElementsByTagName('head')[0];
             const script = document.createElement('script');
             script.type = 'text/javascript';
             script.async = true;
@@ -98,13 +97,13 @@
               flexSetup();
             }
             //url extracted from the JWT
-            script.src = url;
+            script.src = clientLibrary;
             //integrity extracted from the JWT
             if (clientLibraryIntegrity) {
               script.integrity = clientLibraryIntegrity;
               script.crossOrigin = "anonymous";
             }
-            head.appendChild(script);
+            document.head.appendChild(script);
 
             // custom styles that will be applied to each field we create using Microform
             var myStyles = {  

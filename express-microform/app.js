@@ -36,8 +36,8 @@ app.get('/checkout', function (req, res) {
     
             requestObj.clientVersion = 'v2';
             requestObj.targetOrigins = ["http://localhost:3000"];
-            requestObj.allowedCardNetworks = ["VISA", "MAESTRO", "MASTERCARD", "AMEX", "DISCOVER", "DINERSCLUB", "JCB", "CUP", "CARTESBANCAIRES"];
-            requestObj.allowedPaymentTypes = ["CARD","CHECK"];
+            requestObj.allowedCardNetworks = ["VISA", "MASTERCARD", "AMEX", "CARNET", "CARTESBANCAIRES", "CUP", "DINERSCLUB", "DISCOVER", "EFTPOS", "ELO", "JCB", "JCREW", "MADA", "MAESTRO", "MEEZA"];
+            requestObj.allowedPaymentTypes = ["CARD"];
     
             const instance = new cybersourceRestApi.MicroformIntegrationApi(configObject, apiClient);
     
